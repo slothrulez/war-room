@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warroom Spinning Wheel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1f1f1f 100%);
+            color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(52, 152, 219, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(155, 89, 182, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(46, 204, 113, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 90vw;
+            width: 100%;
+        }
+
+        .title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #adb5bd;
+        }
+
+        .wheel-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            overflow: visible;
+        }
+
+        #wheelCanvas {
+            border-radius: 50%;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.4),
+                0 8px 25px rgba(0, 0, 0, 0.2);
+            transition: box-shadow 0.3s ease;
+            background: #2c2c2c;
+            border: 1px solid #495057;
+            cursor: pointer;
+        }
+
+        #wheelCanvas.spinning {
+            box-shadow: 
+                0 8px 30px rgba(0, 0, 0, 0.5),
+                0 12px 40px rgba(52, 152, 219, 0.2);
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #e74c3c;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            z-index: 10;
+        }
+
+        .spin-button {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            font-weight: 700;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 50px;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 
+                0 4px 15px rgba(52, 152, 219, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .spin-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .spin-button:hover::before {
+            left: 100%;
+        }
+
+        .spin-button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #2980b9, #1f618d);
+            box-shadow: 
+                0 6px 20px rgba(52, 152, 219, 0.4),
+                0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .spin-button:active {
+            transform: translateY(0px);
+        }
+
+        .spin-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            background: #95a5a6;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .winner-display {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            font-weight: 700;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #343a40;
+            border: 2px solid #3498db;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 1rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+        }
+
+        .winner-text {
+            color: #ffffff;
+            animation: winnerPulse 1.5s ease-in-out;
+        }
+
+        @keyframes winnerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .credits {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #6c757d;
+            text-align: center;
+            opacity: 0.8;
+        }
+        
+
+
+
+
+        @media (max-width: 768px) {
+            .container {
+                gap: 1.5rem;
+                padding: 1rem;
+            }
+            
+            .spin-button {
+                padding: 12px 30px;
+                font-size: 1.2rem;
+            }
+            
+            #wheelCanvas {
+                max-width: 95vw;
+                max-height: 95vw;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .spin-button {
+                padding: 10px 25px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">WAR ROOM</h1>
+        <p class="subtitle">Spin the Wheel of Innovation</p>
+        
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="wheelCanvas" width="400" height="400"></canvas>
+        </div>
+        
+        <button id="spinButton" class="spin-button">SPIN</button>
+        
+        <div class="winner-display">
+            <div id="winnerText">Ready to spin?</div>
+        </div>
+    </div>
+
+    <div class="credits">
+        © 2025 IEDC TIST. All rights reserved.
+    </div>
+
+    <script>
+        class SpinningWheel {
+            constructor() {
+                this.canvas = document.getElementById('wheelCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.spinButton = document.getElementById('spinButton');
+                this.winnerText = document.getElementById('winnerText');
+                
+                // Wheel configuration
+                this.segments = ['Anirudhh', 'Anjali', 'Sreelakshmi', 'Ruth', 'Eldho', 'Manna'];
+                this.colors = [
+                    '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'
+                ];
+                this.segmentAngle = 360 / this.segments.length;
+                this.currentRotation = 0;
+                this.isSpinning = false;
+                this.winningSegment = -1;
+                this.pulseAnimation = false;
+                this.pulseIntensity = 0;
+                this.hoveredSegment = -1;
+                this.hoverIntensity = 0;
+                this.targetHoverIntensity = 0;
+                
+                this.setupCanvas();
+                this.drawWheel();
+                this.setupEventListeners();
+                this.setupHoverEffect();
+            }
+            
+            setupCanvas() {
+                const size = Math.min(window.innerWidth * 0.85, window.innerHeight * 0.85, 700);
+                this.canvas.width = size;
+                this.canvas.height = size;
+                this.canvas.style.width = size + 'px';
+                this.canvas.style.height = size + 'px';
+                this.radius = size / 2 - 10;
+                this.centerX = size / 2;
+                this.centerY = size / 2;
+            }
+            
+            setupEventListeners() {
+                this.spinButton.addEventListener('click', () => this.spin());
+                window.addEventListener('resize', () => {
+                    this.setupCanvas();
+                    this.drawWheel();
+                });
+            }
+            
+            setupHoverEffect() {
+                this.hoveredSegment = -1;
+                this.hoverIntensity = 0;
+                this.targetHoverIntensity = 0;
+                
+                const updateHoveredSegment = () => {
+                    if (this.isSpinning || this.pulseAnimation) return;
+                    
+                    // Calculate which segment the pointer is pointing to
+                    // Pointer is at the top (270 degrees), segments start at -90 degrees
+                    // We need to find which segment is currently at the top position
+                    let angle = (360 - (this.currentRotation % 360)) % 360;
+                    const pointedSegment = Math.floor(angle / this.segmentAngle) % this.segments.length;
+                    
+                    this.hoveredSegment = pointedSegment;
+                    this.targetHoverIntensity = 1;
+                };
+                
+                this.canvas.addEventListener('mouseenter', () => {
+                    updateHoveredSegment();
+                });
+                
+                this.canvas.addEventListener('mouseleave', () => {
+                    this.hoveredSegment = -1;
+                    this.targetHoverIntensity = 0;
+                });
+                
+                // Update hover effect during wheel interaction
+                this.canvas.addEventListener('mousemove', (e) => {
+                    if (this.isSpinning || this.pulseAnimation) return;
+                    
+                    const rect = this.canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left - this.centerX;
+                    const y = e.clientY - rect.top - this.centerY;
+                    const distance = Math.sqrt(x * x + y * y);
+                    
+                    if (distance <= this.radius && distance >= 25) {
+                        updateHoveredSegment();
+                    } else {
+                        this.hoveredSegment = -1;
+                        this.targetHoverIntensity = 0;
+                    }
+                });
+                
+                // Smooth hover animation
+                const animateHover = () => {
+                    const speed = 0.15;
+                    this.hoverIntensity += (this.targetHoverIntensity - this.hoverIntensity) * speed;
+                    
+                    if (Math.abs(this.hoverIntensity - this.targetHoverIntensity) > 0.01) {
+                        this.drawWheel();
+                    }
+                    
+                    requestAnimationFrame(animateHover);
+                };
+                
+                animateHover();
+            }
+            
+            drawWheel() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Save the current context state
+                this.ctx.save();
+                
+                // Translate to center and apply rotation
+                this.ctx.translate(this.centerX, this.centerY);
+                this.ctx.rotate((this.currentRotation * Math.PI) / 180);
+                
+                // Draw segments
+                for (let i = 0; i < this.segments.length; i++) {
+                    this.drawSegment(i);
+                }
+                
+                // Draw center circle
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, 25, 0, 2 * Math.PI);
+                this.ctx.fillStyle = '#1a1a1a';
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#3498db';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+                
+                // Restore the context state
+                this.ctx.restore();
+            }
+            
+            drawSegment(index) {
+                const startAngle = (index * this.segmentAngle - 90) * Math.PI / 180;
+                const endAngle = ((index + 1) * this.segmentAngle - 90) * Math.PI / 180;
+                
+                // Check effects
+                const isWinning = this.winningSegment === index && this.pulseAnimation;
+                const isHovered = this.hoveredSegment === index && !this.isSpinning && !this.pulseAnimation;
+                const pulseEffect = isWinning ? this.pulseIntensity : 0;
+                const hoverEffect = isHovered ? this.hoverIntensity : 0;
+                
+                // Draw segment background
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, 0);
+                this.ctx.arc(0, 0, this.radius, startAngle, endAngle);
+                this.ctx.closePath();
+                
+                // Create gradient with effects
+                const gradient = this.ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+                const baseColor = this.colors[index];
+                
+                if (isWinning) {
+                    const highlightOpacity = Math.floor(128 + (pulseEffect * 127)).toString(16).padStart(2, '0');
+                    gradient.addColorStop(0, baseColor + highlightOpacity);
+                    gradient.addColorStop(0.7, baseColor + 'ff');
+                    gradient.addColorStop(1, baseColor);
+                } else if (isHovered) {
+                    const hoverOpacity = Math.floor(128 + (hoverEffect * 80)).toString(16).padStart(2, '0');
+                    gradient.addColorStop(0, baseColor + hoverOpacity);
+                    gradient.addColorStop(0.5, baseColor + 'e0');
+                    gradient.addColorStop(1, baseColor);
+                } else {
+                    gradient.addColorStop(0, baseColor + '80');
+                    gradient.addColorStop(1, baseColor);
+                }
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.fill();
+                
+                // Add glow effects
+                if (isWinning || isHovered) {
+                    this.ctx.shadowColor = baseColor;
+                    this.ctx.shadowBlur = isWinning ? 20 + (pulseEffect * 20) : 10 + (hoverEffect * 15);
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                }
+                
+                // Draw segment border
+                let strokeStyle = '#ffffff80';
+                let lineWidth = 1;
+                
+                if (isWinning) {
+                    strokeStyle = '#ffffff';
+                    lineWidth = 2 + pulseEffect;
+                } else if (isHovered) {
+                    strokeStyle = '#ffffff';
+                    lineWidth = 1 + (hoverEffect * 0.5);
+                }
+                
+                this.ctx.strokeStyle = strokeStyle;
+                this.ctx.lineWidth = lineWidth;
+                this.ctx.stroke();
+                
+                // Draw text
+                this.ctx.save();
+                this.ctx.rotate((startAngle + endAngle) / 2);
+                this.ctx.fillStyle = '#ffffff';
+                
+                // Scale text for effects
+                const fontSize = this.radius / 8;
+                let scaledSize = fontSize;
+                
+                if (isWinning) {
+                    scaledSize = fontSize * (1 + pulseEffect * 0.2);
+                } else if (isHovered) {
+                    scaledSize = fontSize * (1 + hoverEffect * 0.1);
+                }
+                
+                this.ctx.font = `bold ${scaledSize}px 'Rajdhani', sans-serif`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                
+                // Add text shadow
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                this.ctx.shadowBlur = isWinning ? 8 : (isHovered ? 6 : 4);
+                this.ctx.shadowOffsetX = 2;
+                this.ctx.shadowOffsetY = 2;
+                
+                this.ctx.fillText(this.segments[index], this.radius * 0.7, 0);
+                this.ctx.restore();
+            }
+            
+            spin() {
+                if (this.isSpinning) return;
+                
+                this.isSpinning = true;
+                this.spinButton.disabled = true;
+                this.canvas.classList.add('spinning');
+                this.winnerText.textContent = 'Spinning...';
+                
+                // Play spinning sound
+                this.playSpinSound();
+                
+                // Generate random spin parameters
+                const minSpins = 5;
+                const maxSpins = 10;
+                const spins = Math.random() * (maxSpins - minSpins) + minSpins;
+                const finalRotation = spins * 360 + Math.random() * 360;
+                
+                // Animate the spin
+                this.animateSpin(finalRotation, 3000);
+            }
+            
+            playSpinSound() {
+                // Create spinning wheel sound using Web Audio API
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // Create spinning wind sound
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                const filter = this.audioContext.createBiquadFilter();
+                
+                oscillator.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Spinning wind/whoosh effect
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(120, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(60, this.audioContext.currentTime + 2.8);
+                
+                // Low-pass filter for more natural sound
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.audioContext.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 2.8);
+                
+                gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2.8);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 2.8);
+                
+                // Add subtle ticking sound
+                this.addTickingSound();
+            }
+            
+            addTickingSound() {
+                let tickCount = 0;
+                const maxTicks = 15;
+                const tickInterval = setInterval(() => {
+                    if (!this.isSpinning || tickCount >= maxTicks) {
+                        clearInterval(tickInterval);
+                        return;
+                    }
+                    
+                    if (!this.audioContext) return;
+                    
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(600, this.audioContext.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.05);
+                    
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + 0.05);
+                    
+                    tickCount++;
+                }, 180 + (tickCount * 20)); // Gradually slower ticks
+            }
+            
+            animateSpin(finalRotation, duration) {
+                const startRotation = this.currentRotation;
+                const startTime = Date.now();
+                
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Easing function for smooth deceleration
+                    const easeOut = 1 - Math.pow(1 - progress, 3);
+                    
+                    this.currentRotation = startRotation + (finalRotation * easeOut);
+                    this.drawWheel();
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        this.stopSpin();
+                    }
+                };
+                
+                animate();
+            }
+            
+            stopSpin() {
+                this.isSpinning = false;
+                this.spinButton.disabled = false;
+                this.canvas.classList.remove('spinning');
+                
+                // Calculate winner - which segment is under the pointer
+                let angle = (360 - (this.currentRotation % 360)) % 360;
+                const winnerIndex = Math.floor(angle / this.segmentAngle) % this.segments.length;
+                const winner = this.segments[winnerIndex];
+                
+
+                
+                // Highlight winning segment
+                this.highlightWinningSegment(winnerIndex);
+                
+                // Display winner with animation
+                setTimeout(() => {
+                    this.winnerText.innerHTML = `<div class="winner-text">${winner}</div>`;
+                    this.playWinnerAnimation();
+                }, 500);
+            }
+            
+
+            
+            highlightWinningSegment(winnerIndex) {
+                // Create pulsing animation for the winning segment
+                this.winningSegment = winnerIndex;
+                this.pulseAnimation = true;
+                this.pulseIntensity = 0;
+                
+                const animatePulse = () => {
+                    if (!this.pulseAnimation) return;
+                    
+                    this.pulseIntensity = (Math.sin(Date.now() * 0.008) + 1) * 0.5; // 0 to 1
+                    this.drawWheel();
+                    requestAnimationFrame(animatePulse);
+                };
+                
+                animatePulse();
+                
+                // Stop pulsing after 3 seconds
+                setTimeout(() => {
+                    this.pulseAnimation = false;
+                    this.winningSegment = -1;
+                    this.drawWheel();
+                }, 3000);
+            }
+            
+
+            
+            playWinnerAnimation() {
+                // Add subtle highlight effect to canvas
+                this.canvas.style.boxShadow = `
+                    0 8px 30px rgba(52, 152, 219, 0.5),
+                    0 12px 40px rgba(0, 0, 0, 0.3)
+                `;
+                
+                setTimeout(() => {
+                    this.canvas.style.boxShadow = `
+                        0 4px 15px rgba(0, 0, 0, 0.4),
+                        0 8px 25px rgba(0, 0, 0, 0.2)
+                    `;
+                }, 2000);
+            }
+        }
+        
+        // Initialize the wheel when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new SpinningWheel();
+        });
+        
+
+    </script>
+</body>
+</html>
